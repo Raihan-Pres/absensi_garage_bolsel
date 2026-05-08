@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi Taksi Lintas Provinsi - Garage Bolsel</title>
+    <style>
+        /* ================= GAYA DASAR ================= */
+        :root {
+            --primary: #e32400; 
+            --primary-hover: #b31b00;
+            --bmw-blue: #007bff;
+            --bmw-dark: #020813;
+            --bmw-glow: rgba(0, 123, 255, 0.8);
+            --bg-dark: #111;
+            --danger: #ef4444;
+            --success: #10b981;
+            --needle-color: #ff3333;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f1f5f9; color: #333; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+        .hidden { display: none !important; }
+
+        /* ================= TRANSISI F1 CAR ================= */
+        #f1-transition {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 10, 10, 0.98); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            transform: translateX(100%); 
+            transition: transform 0.4s cubic-bezier(0.8, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        #f1-transition.active { transform: translateX(0%); } 
+        #f1-transition.finish { transform: translateX(-100%); } 
+        
+        .speed-lines {
+            position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+            background: repeating-linear-gradient(90deg, transparent, transparent 150px, rgba(255,255,255,0.15) 150px, rgba(255,255,255,0.15) 250px);
+            background-size: 200% 100%; animation: speedRush 0.2s infinite linear; z-index: -1;
+        }
+        @keyframes speedRush { 0% { background-position: 0 0; } 100% { background-position: 250px 0; } }
+
+        .f1-car {
+            font-size: 8rem; position: relative; transform-origin: center bottom;
+            animation: engineVibrate 0.08s infinite alternate; filter: drop-shadow(15px 5px 10px rgba(227, 36, 0, 0.8));
+        }
+        @keyframes engineVibrate { 0% { transform: translateY(0px) rotate(-2deg); } 100% { transform: translateY(-8px) rotate(0deg); } }
+
+        /* ================= PAGE UTAMA (LANDING) ================= */
+        #landingPage {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: linear-gradient(rgba(17, 17, 17, 0.6), rgba(17, 17, 17, 0.85)), url('foto grup.jpeg') center/cover no-repeat;
+            color: white; text-align: center; padding: 20px;
+        }
+
+        .strip-logo { width: 100%; max-width: 500px; margin-top: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(227, 36, 0, 0.3); }
+        #landingPage h1 { font-size: 2.5rem; margin-bottom: 5px; color: #fff; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        #landingPage p { font-size: 1.1rem; margin-bottom: 40px; opacity: 0.9; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+        .btn { padding: 12px 30px; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: bold; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-primary { background-color: var(--primary); color: white; box-shadow: 0 4px 15px rgba(227, 36, 0, 0.4); }
+        .btn-primary:hover { background-color: var(--primary-hover); transform: scale(1.05); }
+
+        /* ================= PAGE LOGIN & SPORTY SPEEDOMETER ================= */
+        #loginPage {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+            background-color: var(--bmw-dark); position: relative; overflow: hidden;
+        }
+
+        .bmw-dashboard {
+            position: absolute; width: 100%; height: 100%; top: 0; left: 0;
+            display: flex; justify-content: center; align-items: center; gap: 60px;
+            background: radial-gradient(circle at center bottom, #071630 0%, #020813 60%, #000 100%);
+            z-index: 0; opacity: 0.9;
+        }
+
+        .dial {
+            position: relative; width: 340px; height: 340px; border-radius: 50%;
+            background: linear-gradient(135deg, #050b14, #0a1931);
+            border: 4px solid #0a1931; box-shadow: inset 0 0 40px #000, 0 0 25px var(--bmw-glow);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        .dial::before {
+            content: ''; position: absolute; width: 300px; height: 300px; border-radius: 50%;
+            border: 8px solid rgba(255, 255, 255, 0.05);
+            border-top-color: var(--bmw-blue); border-right-color: var(--bmw-blue);
+            transform: rotate(-135deg); box-shadow: 0 0 15px var(--bmw-glow), inset 0 0 15px var(--bmw-glow);
+        }
+
+        .digital-value { position: absolute; top: 60%; color: #fff; font-size: 2.5rem; font-weight: 800; text-shadow: 0 0 15px rgba(255,255,255,0.8); z-index: 5; }
+        .digital-label { position: absolute; top: 78%; color: rgba(255,255,255,0.6); font-size: 0.9rem; letter-spacing: 2px; font-weight: bold; z-index: 5; }
+        
+        .ticks { position: absolute; width: 100%; height: 100%; border-radius: 50%; }
+        .tick { position: absolute; width: 4px; height: 16px; background: #fff; left: calc(50% - 2px); top: 10px; transform-origin: 50% 160px; box-shadow: 0 0 5px #fff; }
+        .tick.red { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
+        .tick-num { position: absolute; color: #fff; font-weight: bold; font-size: 1.2rem; left: calc(50% - 15px); top: 35px; width: 30px; text-align: center; transform-origin: 50% 135px; }
+
+        .bmw-needle {
+            position: absolute; width: 6px; height: 150px; background: var(--needle-color);
+            bottom: 50%; left: calc(50% - 3px); transform-origin: bottom center;
+            box-shadow: 0 0 10px var(--needle-color), 0 0 20px #ff0000;
+            border-radius: 3px; z-index: 10;
+            transform: rotate(-130deg);
+            animation: bmwIdle 0.1s infinite alternate;
+        }
+        .bmw-needle::after {
+            content: ''; position: absolute; width: 46px; height: 46px;
+            background: radial-gradient(circle, #222, #000); border: 2px solid var(--needle-color);
+            border-radius: 50%; bottom: -23px; left: -20px; box-shadow: 0 0 15px #000;
+        }
+
+        @keyframes bmwIdle { 0% { transform: rotate(-130deg); } 100% { transform: rotate(-128deg); } }
+
+        .bmw-needle.revving-up { animation: sportRev 2.8s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important; }
+
+        @keyframes sportRev {
+            0%   { transform: rotate(-130deg); }
+            20%  { transform: rotate(-50deg); } 
+            30%  { transform: rotate(-75deg); } 
+            100% { transform: rotate(110deg); background: #fff; box-shadow: 0 0 20px #fff, 0 0 40px var(--danger); } 
+        }
+
+        .login-card {
+            background: rgba(10, 15, 25, 0.85); backdrop-filter: blur(12px);
+            padding: 40px; border-radius: 16px; border: 1px solid rgba(0, 123, 255, 0.2);
+            width: 100%; max-width: 380px; z-index: 20; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 123, 255, 0.1);
+        }
+
+        .login-logo { width: 120px; height: 120px; margin: 0 auto 20px; display: block; border-radius: 50%; border: 3px solid var(--primary); object-fit: cover; object-position: center; }
+        .login-card h2 { color: white; text-align: center; margin-bottom: 20px; font-weight: 400; letter-spacing: 1px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #05101f; color: white; outline: none; transition: border 0.3s; }
+        .form-group input:focus { border-color: var(--bmw-blue); box-shadow: 0 0 10px var(--bmw-glow); }
+        .btn-login { width: 100%; margin-top: 10px; }
+
+        @media (max-width: 768px) {
+            .bmw-dashboard { gap: 10px; opacity: 0.4; }
+            .dial { width: 200px; height: 200px; }
+            .dial::before { width: 180px; height: 180px; }
+            .bmw-needle { height: 90px; }
+            .digital-value { font-size: 1.5rem; }
+            .tick-num { font-size: 0.8rem; top: 25px; transform-origin: 50% 75px; }
+            .tick { transform-origin: 50% 100px; height: 10px; }
+        }
+
+        /* ================= PAGE DASHBOARD & RIWAYAT ================= */
+        .dashboard-container { padding: 40px 20px; max-width: 1000px; margin: 0 auto; width: 100%; }
+        
+        .dashboard-header { 
+            position: relative; text-align: center; margin-bottom: 40px; padding-bottom: 15px; 
+            border-bottom: 2px solid #cbd5e1; display: flex; justify-content: center; align-items: center;
+        }
+        .dashboard-header h2 { margin: 0; }
+        
+        .btn-logout {
+            position: absolute; right: 0; background-color: var(--danger); color: white; padding: 8px 20px;
+            font-size: 0.9rem; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: all 0.3s ease;
+        }
+        .btn-logout:hover { background-color: #c81e1e; transform: scale(1.05); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4); }
+
+        .btn-back {
+            position: absolute; left: 0; background-color: #64748b; color: white; padding: 8px 20px;
+            font-size: 0.9rem; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; transition: all 0.3s ease;
+        }
+        .btn-back:hover { background-color: #475569; transform: scale(1.05); }
+
+        .top-section { display: flex; flex-wrap: wrap; gap: 30px; margin-bottom: 40px; align-items: center; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .qr-section img { width: 150px; height: 150px; border-radius: 8px; object-fit: cover; border: 2px solid #e2e8f0; }
+        .action-buttons { display: flex; flex-direction: column; gap: 10px; }
+        .btn-secondary { background-color: #64748b; color: white; border:none; border-radius:6px; padding:10px 15px; font-weight:bold; cursor:pointer;}
+        .btn-secondary:hover { background-color: #475569; }
+        .btn-success { background-color: var(--success); color: white; border:none; border-radius:6px; padding:10px 15px; font-weight:bold; cursor:pointer; }
+        .btn-success:hover { background-color: #059669; }
+
+        .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow-x: auto; padding: 20px; }
+        .table-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;}
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; }
+        th { background-color: #f8fafc; font-weight: 600; }
+
+        .date-picker-container { display: flex; align-items: center; gap: 10px; }
+        .date-picker-container input { padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 1rem; outline: none; }
+        .date-picker-container input:focus { border-color: var(--bmw-blue); }
+
+        .status-manado { color: #10b981; font-weight: bold; } 
+        .status-gorontalo { color: #059669; font-weight: bold; } 
+        .status-bengkel { color: #f59e0b; font-weight: bold; } 
+        .status-siaga { color: #8b5cf6; font-weight: bold; } 
+        .status-selesai { color: #3b82f6; font-weight: bold; } 
+        .status-tidak { color: var(--danger); font-weight: bold; } 
+        .status-pending { color: #64748b; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <div id="f1-transition">
+        <div class="speed-lines"></div>
+        <div class="f1-car">🏎️💨</div>
+    </div>
+
+    <div id="landingPage">
+        <img src="GARAGE STRIP.jpeg" alt="Garage Bolsel Strip" class="strip-logo">
+        <h1>Absen Garage_Bolsel</h1>
+        <p>Taksi Lintas Provinsi - Driver Muda Pejuang Rupiah</p>
+        <button class="btn btn-primary" onclick="transitionTo('loginPage')">Login Admin</button>
+    </div>
+
+    <div id="loginPage" class="hidden">
+        <div class="bmw-dashboard">
+            <div class="dial" id="speedDial">
+                <div class="digital-value" id="digitalSpeed">0</div>
+                <div class="digital-label">km/h</div>
+                <div class="bmw-needle" id="needleSpeed"></div>
+            </div>
+            <div class="dial" id="rpmDial">
+                <div class="digital-value" id="digitalRpm">0</div>
+                <div class="digital-label">1/min x 1000</div>
+                <div class="bmw-needle" id="needleRpm"></div>
+            </div>
+        </div>
+        <div class="login-card">
+            <img src="WhatsApp Image 2026-04-22 at 2.58.13 PM.jpeg" alt="Logo Garage Bolsel" class="login-logo">
+            <h2>Akses Admin</h2>
+            <div class="form-group">
+                <input type="text" id="username" placeholder="Username" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" placeholder="Password">
+            </div>
+            <button class="btn btn-primary btn-login" onclick="handleLogin()">Gas Masuk!</button>
+        </div>
+    </div>
+
+    <div id="dashboardPage" class="hidden dashboard-container">
+        <div class="dashboard-header">
+            <h2>DASHBOARD ABSENSI</h2>
+            <button class="btn-logout" onclick="handleLogout()">Log Out</button>
+        </div>
+        <div class="top-section">
+            <div class="qr-section"><img src="qr.png" alt="QR Code Absensi"></div>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="copyLink()">Salin Tautan Form</button>
+                <button class="btn btn-secondary" onclick="shareLink()">Bagikan via WA</button>
+                <p style="font-size: 0.8rem; color: #64748b; margin-top: 5px;">Terkoneksi API Google Sheets</p>
+            </div>
+        </div>
+        <div class="table-container">
+            <div class="table-header-flex">
+                <h3>Data Supir Lintas Provinsi (Hari Ini)</h3>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="saveTodayAttendance()">Simpan Absen Hari Ini</button>
+                    <button class="btn btn-secondary" onclick="transitionTo('historyPage')">Riwayat Absensi</button>
+                </div>
+            </div>
+            <table id="driverTable">
+                <thead><tr><th>No</th><th>Nama</th><th>Unit/Jalur</th><th>Keterangan (Status Rute)</th><th>Total Alpa</th></tr></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="historyPage" class="hidden dashboard-container">
+        <div class="dashboard-header">
+            <button class="btn-back" onclick="transitionTo('dashboardPage')">Kembali</button>
+            <h2>RIWAYAT ABSENSI</h2>
+        </div>
+        <div class="top-section" style="justify-content: center;">
+            <div class="date-picker-container">
+                <label for="historyDate" style="font-weight: bold; color: #333;">Pilih Tanggal Riwayat:</label>
+                <input type="date" id="historyDate" onchange="renderHistoryTable()">
+            </div>
+        </div>
+        <div class="table-container">
+            <h3 style="margin-bottom: 20px;">Data Absensi Tersimpan</h3>
+            <table id="historyTable">
+                <thead><tr><th>No</th><th>Nama</th><th>Unit/Jalur</th><th>Keterangan (Status Rute)</th><th>Total Alpa</th></tr></thead>
+                <tbody id="historyTableBody"></tbody>
+            </table>
+            <p id="noDataMessage" style="text-align: center; color: var(--danger); margin-top: 20px; font-weight: bold; display: none;">Belum ada data absensi yang disimpan pada tanggal ini.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- DIALS GENERATION ---
+        function generateBMWDials() {
+            const speedDial = document.getElementById('speedDial');
+            const rpmDial = document.getElementById('rpmDial');
+            let speedAngles = [-130, -90, -50, -10, 30, 70, 110];
+            let speedValues = [0, 40, 80, 120, 160, 200, 260];
+            for(let i=0; i<speedAngles.length; i++) {
+                let num = document.createElement('div');
+                num.className = 'tick-num';
+                num.style.transform = `rotate(${speedAngles[i]}deg)`;
+                num.innerHTML = `<div style="transform: rotate(${-speedAngles[i]}deg)">${speedValues[i]}</div>`;
+                speedDial.appendChild(num);
+                let tick = document.createElement('div');
+                tick.className = 'tick';
+                tick.style.transform = `rotate(${speedAngles[i]}deg)`;
+                speedDial.appendChild(tick);
+            }
+            let rpmAngles = [-130, -90, -50, -10, 30, 70, 110];
+            let rpmValues = [0, 1, 2, 3, 4, 5, 6, 7];
+            for(let i=0; i<rpmAngles.length; i++) {
+                let num = document.createElement('div');
+                num.className = 'tick-num';
+                num.style.transform = `rotate(${rpmAngles[i]}deg)`;
+                let colorStyle = (rpmValues[i] >= 6) ? "color: var(--danger);" : "";
+                num.innerHTML = `<div style="transform: rotate(${-rpmAngles[i]}deg); ${colorStyle}">${rpmValues[i]}</div>`;
+                rpmDial.appendChild(num);
+                let tick = document.createElement('div');
+                tick.className = (rpmValues[i] >= 6) ? 'tick red' : 'tick';
+                tick.style.transform = `rotate(${rpmAngles[i]}deg)`;
+                rpmDial.appendChild(tick);
+            }
+        }
+        generateBMWDials();
+
+        // --- DATA AWAL & LOCAL STORAGE ---
+        const initialData = [
+            { nama: "Riko", unit: "Avanza/Manado" }, { nama: "Abdul", unit: "Avanza/Manado" },
+            { nama: "Harid", unit: "Sigra/Gorontalo" }, { nama: "Qian", unit: "Avanza/Manado" },
+            { nama: "Fatra", unit: "Avanza/Gorontalo" }, { nama: "Om on", unit: "Avanza/Gorontalo" },
+            { nama: "Abdal", unit: "Avanza/Gorontalo" }, { nama: "Yogi", unit: "Avanza/Manado" },
+            { nama: "Rian", unit: "Avanza/Gorontalo" }, { nama: "Fahmi", unit: "Avanza/Manado" },
+            { nama: "Ardi", unit: "Calya/Gorontalo" }, { nama: "Gusti", unit: "Avanza/Manado" },
+            { nama: "Hardi", unit: "Calya/Gorontalo" }, { nama: "Mus", unit: "Calya/Manado" },
+            { nama: "Nandar", unit: "Agya/Manado" }, { nama: "Reflin", unit: "Xenia/Gorontalo" },
+            { nama: "Rawit", unit: "Avanza/Gorontalo" }, { nama: "Iky", unit: "Calya/Gorontalo" },
+            { nama: "Yanto", "unit": "Avanza/Manado" }, { nama: "Rusli", "unit": "Avanza/Gorontalo" },
+            { nama: "Ovi", "unit": "Sigra/Manado" }, { nama: "Gatot", "unit": "Avanza/Manado" },
+            { nama: "Into", "unit": "Calya/Pemakaian" }, { nama: "Angki", "unit": "Avanza/Gorontalo" },
+            { nama: "Roy", "unit": "Xenia/Gorontalo" }
+        ];
+
+        let driversData = JSON.parse(localStorage.getItem('driversData')) || initialData.map(d => ({...d, statusHariIni: "Menunggu", totalAlpa: 0, lastAlpaDate: "" }));
+        let historyData = JSON.parse(localStorage.getItem('historyData')) || {};
+
+        // --- API FETCH DARI GOOGLE SHEETS ---
+        // GANTI URL DI BAWAH INI DENGAN URL WEB APP MILIKMU DARI GOOGLE SHEETS!
+        const apiUrl = 'https://script.google.com/macros/s/AKfycby86dE7QiTdaH5uztXomQSqJb4AkHKMQcgthwAu0NQrURo0zlVIb25M4RWOuHAm5b9Lqg/exec'; 
+
+        async function updateTableRealtime() {
+            // Jangan jalankan jika belum login ke dashboard
+            if(document.getElementById('dashboardPage').classList.contains('hidden')) return;
+            if(apiUrl === 'ISI_DENGAN_URL_WEB_APP_GOOGLE_SHEETS_MILIKMU_DISINI') return; // Skip if URL not replaced
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error("Gagal load API");
+                const dataSheets = await response.json();
+                
+                const hariIni = new Date().toLocaleDateString('id-ID'); // Format lokal untuk cek harian
+                let dataChanged = false;
+
+                driversData.forEach(driver => {
+                    const driverAbsen = dataSheets.find(d => d.nama === driver.nama);
+
+                    if (driverAbsen) {
+                        driver.statusHariIni = driverAbsen.statusHariIni;
+                        
+                        // Cek jika statusnya Tidak Hadir (alpa) dan belum tercatat alpa hari ini
+                        if (driver.statusHariIni.toLowerCase().includes("tidak hadir") && driver.lastAlpaDate !== hariIni) {
+                            driver.totalAlpa += 1;
+                            driver.lastAlpaDate = hariIni; // Tandai agar besok baru bisa alpa lagi
+                            dataChanged = true;
+                        }
+                    } else {
+                        // Jika belum ada di sheets hari ini, kembalikan ke menunggu
+                        if (driver.statusHariIni !== "Menunggu") {
+                            driver.statusHariIni = "Menunggu";
+                            dataChanged = true;
+                        }
+                    }
+                });
+
+                // Simpan perubahan ke LocalStorage agar tidak hilang
+                localStorage.setItem('driversData', JSON.stringify(driversData));
+                renderMainTable(); 
+
+            } catch (error) { console.log("Menunggu koneksi API..."); }
+        }
+        setInterval(updateTableRealtime, 5000);
+
+        const engineSound = new Audio('dragon-studio-car-engine-roaring-376881.mp3');
+
+        function animateDigitalNumbers(id, start, end, duration) {
+            const display = document.getElementById(id);
+            if(!display) return;
+            let startTime = null;
+            function easeOutExpo(x) { return x === 1 ? 1 : 1 - Math.pow(2, -10 * x); }
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = timestamp - startTime;
+                const percentage = Math.min(progress / duration, 1);
+                display.innerText = Math.floor(start + (end - start) * easeOutExpo(percentage));
+                if (progress < duration) window.requestAnimationFrame(step);
+                else display.innerText = end;
+            }
+            window.requestAnimationFrame(step);
+        }
+
+        function handleLogin() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            if (user === 'admin' && pass === 'Garage_Bolsel1234#') {
+                engineSound.currentTime = 0; 
+                engineSound.play().catch(e => console.log("Audio diblokir"));
+
+                document.getElementById('needleSpeed').classList.add('revving-up');
+                document.getElementById('needleRpm').classList.add('revving-up');
+                animateDigitalNumbers('digitalSpeed', 0, 260, 2800);
+                animateDigitalNumbers('digitalRpm', 0, 7, 2800);
+
+                setTimeout(() => { transitionTo('dashboardPage'); }, 3000); 
+            } else { alert('Username atau Password salah!'); }
+        }
+
+        function handleLogout() {
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            transitionTo('landingPage');
+        }
+
+        function transitionTo(pageId) {
+            const f1Screen = document.getElementById('f1-transition');
+            f1Screen.style.transition = "transform 0.4s cubic-bezier(0.8, 0, 0.2, 1)";
+            f1Screen.classList.add('active'); 
+
+            setTimeout(() => {
+                document.getElementById('landingPage').classList.add('hidden');
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('dashboardPage').classList.add('hidden');
+                document.getElementById('historyPage').classList.add('hidden');
+                
+                document.getElementById(pageId).classList.remove('hidden');
+                
+                if (pageId === 'dashboardPage') {
+                    renderMainTable();
+                    document.getElementById('needleSpeed').classList.remove('revving-up');
+                    document.getElementById('needleRpm').classList.remove('revving-up');
+                    document.getElementById('digitalSpeed').innerText = "0";
+                    document.getElementById('digitalRpm').innerText = "0";
+                }
+                
+                if (pageId === 'historyPage') {
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('historyDate').value = today;
+                    renderHistoryTable();
+                }
+
+                setTimeout(() => {
+                    f1Screen.classList.remove('active');
+                    f1Screen.classList.add('finish'); 
+                    setTimeout(() => {
+                        f1Screen.style.transition = "none";
+                        f1Screen.classList.remove('finish'); 
+                    }, 500);
+                }, 400); 
+            }, 400); 
+        }
+
+        function renderMainTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            let nomor = 1;
+            driversData.forEach((driver) => {
+                if (driver.totalAlpa >= 3) return;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${nomor}</td><td>${driver.nama}</td><td>${driver.unit}</td><td class="${getStatusClass(driver.statusHariIni)}">${driver.statusHariIni}</td><td>${driver.totalAlpa} x</td>`;
+                tbody.appendChild(tr);
+                nomor++;
+            });
+        }
+
+        function saveTodayAttendance() {
+            const today = new Date().toISOString().split('T')[0];
+            historyData[today] = JSON.parse(JSON.stringify(driversData));
+            localStorage.setItem('historyData', JSON.stringify(historyData));
+            alert(`Data Absensi untuk hari ini (${today}) telah berhasil DISIMPAN ke Riwayat!`);
+        }
+
+        function renderHistoryTable() {
+            const selectedDate = document.getElementById('historyDate').value;
+            const tbody = document.getElementById('historyTableBody');
+            const msgObj = document.getElementById('noDataMessage');
+            tbody.innerHTML = '';
+
+            const storedData = historyData[selectedDate];
+
+            if (!storedData || storedData.length === 0) {
+                msgObj.style.display = 'block';
+            } else {
+                msgObj.style.display = 'none';
+                let nomor = 1;
+                storedData.forEach((driver) => {
+                    if (driver.totalAlpa >= 3) return; 
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${nomor}</td><td>${driver.nama}</td><td>${driver.unit}</td><td class="${getStatusClass(driver.statusHariIni)}">${driver.statusHariIni}</td><td>${driver.totalAlpa} x</td>`;
+                    tbody.appendChild(tr);
+                    nomor++;
+                });
+            }
+        }
+
+        function getStatusClass(statusText) {
+            let lowerText = statusText.toLowerCase();
+            if (lowerText.includes("manado")) return "status-manado";
+            if (lowerText.includes("gorontalo")) return "status-gorontalo";
+            if (lowerText.includes("bengkel")) return "status-bengkel";
+            if (lowerText.includes("siaga")) return "status-siaga";
+            if (lowerText.includes("selesai")) return "status-selesai";
+            if (lowerText.includes("tidak hadir")) return "status-tidak";
+            return "status-pending";
+        }
+
+        const googleFormLink = "https://docs.google.com/forms/d/1CTSSLL2PHai9aQ_fnjFQd-9WoTkos_9S62mYPRwPqkQ/viewform"; 
+        function copyLink() { 
+            navigator.clipboard.writeText(googleFormLink).then(() => alert('Tautan berhasil disalin!')).catch(() => alert('Gagal menyalin tautan.')); 
+        }
+        function shareLink() {
+            const textToShare = encodeURIComponent("Silahkan isi absensi Garage Bolsel sebelum jalan: \n\n" + googleFormLink);
+            window.open("https://api.whatsapp.com/send?text=" + textToShare, '_blank');
+        }
+    </script>
+</body>
+</html>
