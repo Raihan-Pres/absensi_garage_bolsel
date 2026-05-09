@@ -338,12 +338,12 @@
 
         // --- API FETCH DARI GOOGLE SHEETS ---
         // GANTI URL DI BAWAH INI DENGAN URL WEB APP MILIKMU DARI GOOGLE SHEETS!
-        const apiUrl = 'https://script.google.com/macros/s/AKfycby86dE7QiTdaH5uztXomQSqJb4AkHKMQcgthwAu0NQrURo0zlVIb25M4RWOuHAm5b9Lqg/exec'; 
+        const apiUrl = 'https://script.google.com/macros/s/AKfycbzZxas-Krs5RPHMiVOsUiBHfIetd4cWrG0egIVt7tya4MNnrQuvulbf0F_o7HQQRSB7/exec'; 
 
         async function updateTableRealtime() {
             // Jangan jalankan jika belum login ke dashboard
             if(document.getElementById('dashboardPage').classList.contains('hidden')) return;
-            if(apiUrl === 'https://script.google.com/macros/s/AKfycby86dE7QiTdaH5uztXomQSqJb4AkHKMQcgthwAu0NQrURo0zlVIb25M4RWOuHAm5b9Lqg/exec') return; // Skip if URL not replaced
+            if(apiUrl === 'https://script.google.com/macros/s/AKfycbzZxas-Krs5RPHMiVOsUiBHfIetd4cWrG0egIVt7tya4MNnrQuvulbf0F_o7HQQRSB7/exec') return; // Skip if URL not replaced
 
             try {
                 const response = await fetch(apiUrl);
