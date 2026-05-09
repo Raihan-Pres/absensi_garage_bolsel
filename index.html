@@ -338,49 +338,52 @@
 
         // --- API FETCH DARI GOOGLE SHEETS ---
         // GANTI URL DI BAWAH INI DENGAN URL WEB APP MILIKMU DARI GOOGLE SHEETS!
-        const apiUrl = 'https://script.google.com/macros/s/AKfycbzZxas-Krs5RPHMiVOsUiBHfIetd4cWrG0egIVt7tya4MNnrQuvulbf0F_o7HQQRSB7/exec'; 
+        const apiUrl = 'https://script.google.com/macros/s/AKfycbwAzBuWg5dD6Kxsl_0IptkdPXROfUVQappSXX6vsKe_JBJ3aRWAYELnKuKUx9M2Ryx6/exec'; 
 
         async function updateTableRealtime() {
-            // Jangan jalankan jika belum login ke dashboard
             if(document.getElementById('dashboardPage').classList.contains('hidden')) return;
-            if(apiUrl === 'https://script.google.com/macros/s/AKfycbzZxas-Krs5RPHMiVOsUiBHfIetd4cWrG0egIVt7tya4MNnrQuvulbf0F_o7HQQRSB7/exec') return; // Skip if URL not replaced
-
+            
             try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error("Gagal load API");
+                // Trik anti-cache agar data selalu fresh dari Google
+                const response = await fetch(apiUrl + "?t=" + new Date().getTime());
                 const dataSheets = await response.json();
                 
-                const hariIni = new Date().toLocaleDateString('id-ID'); // Format lokal untuk cek harian
+                const hariIni = new Date().toLocaleDateString('id-ID');
                 let dataChanged = false;
 
                 driversData.forEach(driver => {
-                    const driverAbsen = dataSheets.find(d => d.nama === driver.nama);
+                    // Gunakan .trim() untuk membuang spasi yang tidak sengaja terketik di Form
+                    const driverAbsen = dataSheets.find(d => d.nama.trim().toLowerCase() === driver.nama.trim().toLowerCase());
 
                     if (driverAbsen) {
-                        driver.statusHariIni = driverAbsen.statusHariIni;
-                        
-                        // Cek jika statusnya Tidak Hadir (alpa) dan belum tercatat alpa hari ini
-                        if (driver.statusHariIni.toLowerCase().includes("tidak hadir") && driver.lastAlpaDate !== hariIni) {
-                            driver.totalAlpa += 1;
-                            driver.lastAlpaDate = hariIni; // Tandai agar besok baru bisa alpa lagi
+                        if (driver.statusHariIni !== driverAbsen.statusHariIni) {
+                            driver.statusHariIni = driverAbsen.statusHariIni;
+                            
+                            // Logika Alpa: Bertambah jika status mengandung "tidak hadir"
+                            if (driver.statusHariIni.toLowerCase().includes("tidak hadir") && driver.lastAlpaDate !== hariIni) {
+                                driver.totalAlpa += 1;
+                                driver.lastAlpaDate = hariIni;
+                            }
                             dataChanged = true;
                         }
                     } else {
-                        // Jika belum ada di sheets hari ini, kembalikan ke menunggu
-                        if (driver.statusHariIni !== "Menunggu") {
+                        // Reset ke Menunggu jika hari berganti (tidak ada absen baru di Sheets)
+                        if (driver.statusHariIni !== "Menunggu" && driver.lastAlpaDate !== hariIni) {
                             driver.statusHariIni = "Menunggu";
                             dataChanged = true;
                         }
                     }
                 });
 
-                // Simpan perubahan ke LocalStorage agar tidak hilang
-                localStorage.setItem('driversData', JSON.stringify(driversData));
-                renderMainTable(); 
-
-            } catch (error) { console.log("Menunggu koneksi API..."); }
+                if (dataChanged) {
+                    localStorage.setItem('driversData', JSON.stringify(driversData));
+                    renderMainTable();
+                }
+            } catch (error) {
+                console.error("Gagal sinkronisasi:", error);
+            }
         }
-        setInterval(updateTableRealtime, 5000);
+        setInterval(updateTableRealtime, 1000);
 
         const engineSound = new Audio('dragon-studio-car-engine-roaring-376881.mp3');
 
