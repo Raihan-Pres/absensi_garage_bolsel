@@ -220,7 +220,7 @@
             </div>
         </div>
         <div class="login-card">
-            <img src="WhatsApp Image 2026-04-22 at 2.58.13 PM.jpeg" alt="Logo Garage Bolsel" class="login-logo">
+            <img src="logo_bulat" alt="Logo Garage Bolsel" class="login-logo">
             <h2>Akses Admin</h2>
             <div class="form-group">
                 <input type="text" id="username" placeholder="Username" autocomplete="off">
@@ -343,7 +343,7 @@
         async function updateTableRealtime() {
             // Jangan jalankan jika belum login ke dashboard
             if(document.getElementById('dashboardPage').classList.contains('hidden')) return;
-            if(apiUrl === 'ISI_DENGAN_URL_WEB_APP_GOOGLE_SHEETS_MILIKMU_DISINI') return; // Skip if URL not replaced
+            if(apiUrl === 'https://script.google.com/macros/s/AKfycby86dE7QiTdaH5uztXomQSqJb4AkHKMQcgthwAu0NQrURo0zlVIb25M4RWOuHAm5b9Lqg/exec') return; // Skip if URL not replaced
 
             try {
                 const response = await fetch(apiUrl);
